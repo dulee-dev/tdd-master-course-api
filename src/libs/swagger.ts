@@ -1,4 +1,9 @@
+import { dirname } from 'path';
 import swaggerJSDoc from 'swagger-jsdoc';
+import { fileURLToPath } from 'url';
+
+const filename = fileURLToPath(import.meta.url);
+const dir = dirname(filename);
 
 export const buildSwagger = (port: number) => {
   const swaggerOptions: swaggerJSDoc.Options = {
@@ -47,7 +52,7 @@ export const buildSwagger = (port: number) => {
         },
       },
     },
-    apis: [__dirname + '../routes/*.js'], // API 파일 경로
+    apis: [dir + '/../routes/*.js'], // API 파일 경로
   };
 
   return swaggerJSDoc(swaggerOptions);
