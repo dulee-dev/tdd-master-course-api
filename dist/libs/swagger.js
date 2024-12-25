@@ -46,7 +46,7 @@ export const buildSwagger = (port) => {
                 },
             },
         },
-        apis: ['./dist/routes/*.js'], // API 파일 경로
+        apis: [__dirname + '../routes/*.js'], // API 파일 경로
     };
     return swaggerJSDoc(swaggerOptions);
 };
