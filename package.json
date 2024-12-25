@@ -1,8 +1,9 @@
 {
-  "name": "api",
+  "name": "@dulee/tdd-masterclass-api",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
+  "private": false,
   "type": "module",
   "bin": {
     "server": "dist/index.js"
