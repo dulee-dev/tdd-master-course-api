@@ -6,7 +6,7 @@
   "private": false,
   "type": "module",
   "bin": {
-    "server": "dist/index.js"
+    "server": "node dist/index.js"
   },
   "scripts": {
     "build": "tsc",
