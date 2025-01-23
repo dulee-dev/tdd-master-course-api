@@ -20,7 +20,7 @@ const convertContentToContentView = (content: Content, user: User) => {
  * @swagger
  * /contents/count:
  *   get:
- *     summary: count by optional q
+ *     summary: count by optional search
  *     responses:
  *       200:
  *         description: ok
@@ -41,17 +41,19 @@ router.get('/contents/count', (req, res) => {
 
   const [, qString] = url.split('?');
   const query = queryString.parse(qString);
-  const q = typeof query.q === 'string' ? query.q : undefined;
+  const search = typeof query.search === 'string' ? query.search : undefined;
 
-  if (!q) {
+  if (!search) {
     res.json({
-      count: contentTable.length,
+      data: { count: contentTable.length },
       status: 200,
     });
     return;
   }
   res.json({
-    count: contentTable.filter((c) => c.title.includes(q)).length,
+    data: {
+      count: contentTable.filter((c) => c.title.includes(search)).length,
+    },
     status: 200,
   });
   return;
@@ -130,13 +132,15 @@ router.get('/contents', (req, res) => {
   const [, qString] = url.split('?');
 
   if (qString === undefined) {
-    const contents = contentTable;
+    const contents = contentTable
+      .sort((a, b) => {
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      })
+      .slice(0, 12);
     res.json({
-      contents: contents
-        .sort((a, b) => {
-          return b.createdAt.getTime() - a.createdAt.getTime();
-        })
-        .slice(0, 12),
+      data: {
+        contents,
+      },
       status: 200,
     });
     return;
@@ -148,20 +152,21 @@ router.get('/contents', (req, res) => {
   const startAt = (pageNum - 1) * pageTake;
   const endAt = pageNum * pageTake;
 
-  const contents = contentTable;
+  const contents = contentTable
+    .filter((c) =>
+      typeof query.search !== 'string' ? true : c.title.includes(query.search)
+    )
+    .sort((a, b) => {
+      if (query.sort === 'title-asc') {
+        return a.title.localeCompare(b.title);
+      }
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    })
+    .slice(startAt, endAt)
+    .map((c) => convertContentToContentView(c, userTable[0]));
+
   res.json({
-    contents: contents
-      .filter((c) =>
-        typeof query.q !== 'string' ? true : c.title.includes(query.q)
-      )
-      .sort((a, b) => {
-        if (query.sort === 'title-asc') {
-          return a.title.localeCompare(b.title);
-        }
-        return b.createdAt.getTime() - a.createdAt.getTime();
-      })
-      .slice(startAt, endAt)
-      .map((c) => convertContentToContentView(c, userTable[0])),
+    data: { contents },
     status: 200,
   });
 });
@@ -212,7 +217,7 @@ router.get('/contents/:id', (req, res) => {
   }
 
   res.json({
-    content: convertContentToContentView(found, user),
+    data: { content: convertContentToContentView(found, user) },
     status: 200,
   });
 });
@@ -253,20 +258,19 @@ router.get('/users/me/contents/:id', (req, res) => {
   const user = userTable.find((c) => c.nickname === auth);
   if (!user) {
     res.json({
-      status: 404,
+      status: 401,
     });
     return;
   }
 
   const found = contentTable.find((c) => c.id === id && c.authorId === user.id);
-
   if (!found) {
     res.json({ status: 404 });
     return;
   }
 
   res.json({
-    content: convertContentToContentView(found, user),
+    data: { content: convertContentToContentView(found, user) },
     status: 200,
   });
 });
@@ -312,7 +316,6 @@ router.get('/users/me/contents/:id', (req, res) => {
  */
 router.post('/contents', async (req, res) => {
   const auth = req.headers['authorization']; // 헤더 이름으로 값 가져오기
-
   const user = userTable.find((c) => c.nickname === auth);
   if (!user) {
     res.json({
@@ -333,7 +336,7 @@ router.post('/contents', async (req, res) => {
   contentTable.push(content);
 
   res.json({
-    content,
+    data: { content },
     status: 201,
   });
 });
@@ -385,17 +388,16 @@ router.post('/contents', async (req, res) => {
  *         description: Content or user not found.
  */
 router.patch('/contents/:id', async (req, res) => {
-  const id = req.params.id as string | undefined;
   const auth = req.headers['authorization']; // 헤더 이름으로 값 가져오기
-
   const user = userTable.find((c) => c.nickname === auth);
   if (!user) {
     res.json({
-      status: 404,
+      status: 401,
     });
     return;
   }
 
+  const id = req.params.id as string | undefined;
   const found = contentTable.find((c) => c.id === id && c.authorId === user.id);
   if (!found) {
     res.json({
@@ -416,7 +418,7 @@ router.patch('/contents/:id', async (req, res) => {
   }
 
   res.json({
-    content: convertContentToContentView(updated, user),
+    data: { content: convertContentToContentView(updated, user) },
     status: 200,
   });
 });
@@ -449,17 +451,16 @@ router.patch('/contents/:id', async (req, res) => {
  *         description: Content or user not found.
  */
 router.delete('/contents/:id', async (req, res) => {
-  const id = req.params.id as string | undefined;
   const auth = req.headers['authorization']; // 헤더 이름으로 값 가져오기
-
   const user = userTable.find((c) => c.nickname === auth);
   if (!user) {
     res.json({
-      status: 404,
+      status: 401,
     });
     return;
   }
 
+  const id = req.params.id as string | undefined;
   const found = contentTable.find((c) => c.id === id && c.authorId === user.id);
   if (!found) {
     res.json({
