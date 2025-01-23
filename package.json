@@ -6,7 +6,7 @@
   "private": false,
   "type": "module",
   "bin": {
-    "server": "node dist/index.js"
+    "server": "node node_modules/@dulee.dev/tdd-masterclass-api/dist/index.js"
   },
   "scripts": {
     "build": "tsc",
