@@ -1,6 +1,6 @@
 {
   "name": "@dulee.dev/tdd-masterclass-api",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "",
   "main": "dist/index.js",
   "private": false,
