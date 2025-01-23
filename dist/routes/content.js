@@ -21,7 +21,15 @@ const convertContentToContentView = (content, user) => {
  * @swagger
  * /contents/count:
  *   get:
- *     summary: count by optional q
+ *     summary: count by optional search
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *           example: "search"
+ *           required: false
+ *         description: find title includes.
  *     responses:
  *       200:
  *         description: ok
@@ -30,9 +38,11 @@ const convertContentToContentView = (content, user) => {
  *             schema:
  *               type: object
  *               properties:
- *                 count:
- *                  type: number
- *                  example: 14
+ *                 data:
+ *                    properties:
+ *                      count:
+ *                       type: number
+ *                       example: 14
  *                 status:
  *                   type: number
  *                   example: 200
@@ -41,16 +51,18 @@ router.get('/contents/count', (req, res) => {
     const url = req.url;
     const [, qString] = url.split('?');
     const query = queryString.parse(qString);
-    const q = typeof query.q === 'string' ? query.q : undefined;
-    if (!q) {
+    const search = typeof query.search === 'string' ? query.search : undefined;
+    if (!search) {
         res.json({
-            count: contentTable.length,
+            data: { count: contentTable.length },
             status: 200,
         });
         return;
     }
     res.json({
-        count: contentTable.filter((c) => c.title.includes(q)).length,
+        data: {
+            count: contentTable.filter((c) => c.title.includes(search)).length,
+        },
         status: 200,
     });
     return;
@@ -68,12 +80,14 @@ router.get('/contents/count', (req, res) => {
  *           type: integer
  *           example: 1
  *         description: The page number (defaults to 1).
+ *         required: true
  *       - in: query
  *         name: pageTake
  *         schema:
  *           type: integer
  *           example: 12
  *         description: Number of items per page (defaults to 12).
+ *         required: true
  *       - in: query
  *         name: q
  *         schema:
@@ -95,30 +109,32 @@ router.get('/contents/count', (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 contents:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                         example: "12345"
- *                       title:
- *                         type: string
- *                         example: "Example Title"
- *                       body:
- *                         type: string
- *                         example: "This is the body of the content."
- *                       thumbnail:
- *                         type: string
- *                         example: "https://example.com/thumbnail.jpg"
- *                       createdAt:
- *                         type: string
- *                         format: date-time
- *                         example: "2024-12-25T10:00:00.000Z"
- *                       authorId:
- *                         type: string
- *                         example: "67890"
+ *                 data:
+ *                  properties:
+ *                      contents:
+ *                        type: array
+ *                        items:
+ *                          type: object
+ *                          properties:
+ *                            id:
+ *                              type: string
+ *                              example: "12345"
+ *                            title:
+ *                              type: string
+ *                              example: "Example Title"
+ *                            body:
+ *                              type: string
+ *                              example: "This is the body of the content."
+ *                            thumbnail:
+ *                              type: string
+ *                              example: "https://example.com/thumbnail.jpg"
+ *                            createdAt:
+ *                              type: string
+ *                              format: date-time
+ *                              example: "2024-12-25T10:00:00.000Z"
+ *                            authorId:
+ *                              type: string
+ *                              example: "67890"
  *                 status:
  *                   type: integer
  *                   example: 200
@@ -127,13 +143,15 @@ router.get('/contents', (req, res) => {
     const url = req.url;
     const [, qString] = url.split('?');
     if (qString === undefined) {
-        const contents = contentTable;
+        const contents = contentTable
+            .sort((a, b) => {
+            return b.createdAt.getTime() - a.createdAt.getTime();
+        })
+            .slice(0, 12);
         res.json({
-            contents: contents
-                .sort((a, b) => {
-                return b.createdAt.getTime() - a.createdAt.getTime();
-            })
-                .slice(0, 12),
+            data: {
+                contents,
+            },
             status: 200,
         });
         return;
@@ -143,18 +161,18 @@ router.get('/contents', (req, res) => {
     const pageTake = typeof query.pageTake === 'string' ? +query.pageTake : 12;
     const startAt = (pageNum - 1) * pageTake;
     const endAt = pageNum * pageTake;
-    const contents = contentTable;
+    const contents = contentTable
+        .filter((c) => typeof query.search !== 'string' ? true : c.title.includes(query.search))
+        .sort((a, b) => {
+        if (query.sort === 'title-asc') {
+            return a.title.localeCompare(b.title);
+        }
+        return b.createdAt.getTime() - a.createdAt.getTime();
+    })
+        .slice(startAt, endAt)
+        .map((c) => convertContentToContentView(c, userTable[0]));
     res.json({
-        contents: contents
-            .filter((c) => typeof query.q !== 'string' ? true : c.title.includes(query.q))
-            .sort((a, b) => {
-            if (query.sort === 'title-asc') {
-                return a.title.localeCompare(b.title);
-            }
-            return b.createdAt.getTime() - a.createdAt.getTime();
-        })
-            .slice(startAt, endAt)
-            .map((c) => convertContentToContentView(c, userTable[0])),
+        data: { contents },
         status: 200,
     });
 });
@@ -179,8 +197,10 @@ router.get('/contents', (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 content:
- *                   $ref: '#/schemas/Content'
+ *                 data:
+ *                    properties:
+ *                        content:
+ *                         $ref: '#/schemas/Content'
  *                 status:
  *                   type: integer
  *                   example: 200
@@ -200,7 +220,7 @@ router.get('/contents/:id', (req, res) => {
         return;
     }
     res.json({
-        content: convertContentToContentView(found, user),
+        data: { content: convertContentToContentView(found, user) },
         status: 200,
     });
 });
@@ -225,8 +245,10 @@ router.get('/contents/:id', (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 content:
- *                   $ref: '#/schemas/Content'
+ *                 data:
+ *                    properties:
+ *                       content:
+ *                         $ref: '#/schemas/Content'
  *                 status:
  *                   type: integer
  *                   example: 200
@@ -239,7 +261,7 @@ router.get('/users/me/contents/:id', (req, res) => {
     const user = userTable.find((c) => c.nickname === auth);
     if (!user) {
         res.json({
-            status: 404,
+            status: 401,
         });
         return;
     }
@@ -249,7 +271,7 @@ router.get('/users/me/contents/:id', (req, res) => {
         return;
     }
     res.json({
-        content: convertContentToContentView(found, user),
+        data: { content: convertContentToContentView(found, user) },
         status: 200,
     });
 });
@@ -284,8 +306,10 @@ router.get('/users/me/contents/:id', (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 content:
- *                   $ref: '#/schemas/Content'
+ *                 data:
+ *                   properties:
+ *                     content:
+ *                      $ref: '#/schemas/Content'
  *                 status:
  *                   type: integer
  *                   example: 201
@@ -306,7 +330,7 @@ router.post('/contents', (req, res) => __awaiter(void 0, void 0, void 0, functio
     const content = Object.assign(Object.assign({ id }, prototype), { authorId: user.id, createdAt: new Date() });
     contentTable.push(content);
     res.json({
-        content,
+        data: { content },
         status: 201,
     });
 }));
@@ -348,8 +372,10 @@ router.post('/contents', (req, res) => __awaiter(void 0, void 0, void 0, functio
  *             schema:
  *               type: object
  *               properties:
- *                 content:
- *                   $ref: '#/schemas/Content'
+ *                 data:
+ *                    properties:
+ *                     content:
+ *                       $ref: '#/schemas/Content'
  *                 status:
  *                   type: integer
  *                   example: 200
@@ -357,15 +383,15 @@ router.post('/contents', (req, res) => __awaiter(void 0, void 0, void 0, functio
  *         description: Content or user not found.
  */
 router.patch('/contents/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const id = req.params.id;
     const auth = req.headers['authorization']; // 헤더 이름으로 값 가져오기
     const user = userTable.find((c) => c.nickname === auth);
     if (!user) {
         res.json({
-            status: 404,
+            status: 401,
         });
         return;
     }
+    const id = req.params.id;
     const found = contentTable.find((c) => c.id === id && c.authorId === user.id);
     if (!found) {
         res.json({
@@ -380,7 +406,7 @@ router.patch('/contents/:id', (req, res) => __awaiter(void 0, void 0, void 0, fu
         contentTable[idx] = updated;
     }
     res.json({
-        content: convertContentToContentView(updated, user),
+        data: { content: convertContentToContentView(updated, user) },
         status: 200,
     });
 }));
@@ -412,15 +438,15 @@ router.patch('/contents/:id', (req, res) => __awaiter(void 0, void 0, void 0, fu
  *         description: Content or user not found.
  */
 router.delete('/contents/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const id = req.params.id;
     const auth = req.headers['authorization']; // 헤더 이름으로 값 가져오기
     const user = userTable.find((c) => c.nickname === auth);
     if (!user) {
         res.json({
-            status: 404,
+            status: 401,
         });
         return;
     }
+    const id = req.params.id;
     const found = contentTable.find((c) => c.id === id && c.authorId === user.id);
     if (!found) {
         res.json({

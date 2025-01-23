@@ -21,6 +21,14 @@ const convertContentToContentView = (content: Content, user: User) => {
  * /contents/count:
  *   get:
  *     summary: count by optional search
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *           example: "search"
+ *           required: false
+ *         description: find title includes.
  *     responses:
  *       200:
  *         description: ok
@@ -29,9 +37,11 @@ const convertContentToContentView = (content: Content, user: User) => {
  *             schema:
  *               type: object
  *               properties:
- *                 count:
- *                  type: number
- *                  example: 14
+ *                 data:
+ *                    properties:
+ *                      count:
+ *                       type: number
+ *                       example: 14
  *                 status:
  *                   type: number
  *                   example: 200
@@ -72,12 +82,14 @@ router.get('/contents/count', (req, res) => {
  *           type: integer
  *           example: 1
  *         description: The page number (defaults to 1).
+ *         required: true
  *       - in: query
  *         name: pageTake
  *         schema:
  *           type: integer
  *           example: 12
  *         description: Number of items per page (defaults to 12).
+ *         required: true
  *       - in: query
  *         name: q
  *         schema:
@@ -99,30 +111,32 @@ router.get('/contents/count', (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 contents:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                         example: "12345"
- *                       title:
- *                         type: string
- *                         example: "Example Title"
- *                       body:
- *                         type: string
- *                         example: "This is the body of the content."
- *                       thumbnail:
- *                         type: string
- *                         example: "https://example.com/thumbnail.jpg"
- *                       createdAt:
- *                         type: string
- *                         format: date-time
- *                         example: "2024-12-25T10:00:00.000Z"
- *                       authorId:
- *                         type: string
- *                         example: "67890"
+ *                 data:
+ *                  properties:
+ *                      contents:
+ *                        type: array
+ *                        items:
+ *                          type: object
+ *                          properties:
+ *                            id:
+ *                              type: string
+ *                              example: "12345"
+ *                            title:
+ *                              type: string
+ *                              example: "Example Title"
+ *                            body:
+ *                              type: string
+ *                              example: "This is the body of the content."
+ *                            thumbnail:
+ *                              type: string
+ *                              example: "https://example.com/thumbnail.jpg"
+ *                            createdAt:
+ *                              type: string
+ *                              format: date-time
+ *                              example: "2024-12-25T10:00:00.000Z"
+ *                            authorId:
+ *                              type: string
+ *                              example: "67890"
  *                 status:
  *                   type: integer
  *                   example: 200
@@ -192,8 +206,10 @@ router.get('/contents', (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 content:
- *                   $ref: '#/schemas/Content'
+ *                 data:
+ *                    properties:
+ *                        content:
+ *                         $ref: '#/schemas/Content'
  *                 status:
  *                   type: integer
  *                   example: 200
@@ -243,8 +259,10 @@ router.get('/contents/:id', (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 content:
- *                   $ref: '#/schemas/Content'
+ *                 data:
+ *                    properties:
+ *                       content:
+ *                         $ref: '#/schemas/Content'
  *                 status:
  *                   type: integer
  *                   example: 200
@@ -306,8 +324,10 @@ router.get('/users/me/contents/:id', (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 content:
- *                   $ref: '#/schemas/Content'
+ *                 data:
+ *                   properties:
+ *                     content:
+ *                      $ref: '#/schemas/Content'
  *                 status:
  *                   type: integer
  *                   example: 201
@@ -379,8 +399,10 @@ router.post('/contents', async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 content:
- *                   $ref: '#/schemas/Content'
+ *                 data:
+ *                    properties:
+ *                     content:
+ *                       $ref: '#/schemas/Content'
  *                 status:
  *                   type: integer
  *                   example: 200

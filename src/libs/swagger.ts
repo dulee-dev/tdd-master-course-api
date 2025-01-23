@@ -11,7 +11,7 @@ export const buildSwagger = (port: number) => {
       openapi: '3.0.0',
       info: {
         title: 'TDD MASTERCLASSS API',
-        version: '1.0.0',
+        version: '1.3.0',
         description: 'A simple Express API',
       },
       servers: [
