@@ -114,27 +114,7 @@ router.get('/contents/count', (req, res) => {
  *                      contents:
  *                        type: array
  *                        items:
- *                          type: object
- *                          properties:
- *                            id:
- *                              type: string
- *                              example: "12345"
- *                            title:
- *                              type: string
- *                              example: "Example Title"
- *                            body:
- *                              type: string
- *                              example: "This is the body of the content."
- *                            thumbnail:
- *                              type: string
- *                              example: "https://example.com/thumbnail.jpg"
- *                            createdAt:
- *                              type: string
- *                              format: date-time
- *                              example: "2024-12-25T10:00:00.000Z"
- *                            authorId:
- *                              type: string
- *                              example: "67890"
+ *                          $ref: '#/schemas/ContentView'
  *                 status:
  *                   type: integer
  *                   example: 200
@@ -200,7 +180,7 @@ router.get('/contents', (req, res) => {
  *                 data:
  *                    properties:
  *                        content:
- *                         $ref: '#/schemas/Content'
+ *                         $ref: '#/schemas/ContentView'
  *                 status:
  *                   type: integer
  *                   example: 200
